@@ -39,10 +39,6 @@ macOS：打开镜像，把「栖景 Quiet」拖进「应用程序」。首次打
 
 内置 6 张插画标记为「内置原创插画」，不是 Unsplash 照片。
 
-## 后台
-
-Unsplash Access Key 只放在服务器的 `server/.env`，不放进桌面应用。部署方法见 `server/README.md`。后台可以查看设备所在城市、系统与机型、使用时长，以及用户提交的反馈。
-
 ## 开发
 
 需要 Node.js 22 或更高版本。
