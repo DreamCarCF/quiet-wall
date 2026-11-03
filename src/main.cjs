@@ -14,7 +14,7 @@ let stateFile,mediaDir;
 let saveQueue=Promise.resolve();
 const remote=new Map();
 let feed=[],feedQuery='';
-const apiBase=process.env.QUIET_API||(app.isPackaged?'https://www.ilovedsy.com/quiet':'http://127.0.0.1:8787');
+const apiBase=process.env.QUIET_API||(app.isPackaged?'https://wallpaper.fqsdtech.com':'http://127.0.0.1:8787');
 let enabled=false;
 let deviceId,sessionId,sessionStarted,usageTimer,usageFlushed=false;
 const root=path.join(__dirname,'..');

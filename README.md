@@ -63,6 +63,7 @@ electron_mirror=https://cdn.npmmirror.com/binaries/electron/
 - 收藏、历史和导入的图片保存在本机，Windows 上通常是 `%APPDATA%\栖景 Quiet\`。
 - 页面启用了 contextIsolation 和 sandbox。外链只允许 Unsplash 官网和作者主页 `https://www.ilovedsy.com`。
 - Windows 通过固定的 PowerShell 脚本设置壁纸，图片路径放在环境变量里。macOS 把图片路径作为参数交给 `osascript`，不把用户输入拼进命令。
+- 正式版的在线图片和意见反馈发往 `https://wallpaper.fqsdtech.com`。本地照片仍保存在本机。
 - 应用不设置开机启动，也不上传本地照片。
 
 本项目源码与内置插画按 MIT 许可提供。Unsplash 照片须遵守其许可和条款。

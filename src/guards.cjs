@@ -18,7 +18,7 @@ function serviceURL(base, path) {
   if (!/^api\/(health|search|track|usage|feedback)(\?|$)/.test(rel)) throw Error('不受支持的链接');
   const u = new URL(rel, root);
   const local = u.hostname === 'localhost' || u.hostname === '127.0.0.1';
-  const official = u.hostname === 'www.ilovedsy.com' || u.hostname === 'ilovedsy.com';
+  const official = u.hostname === 'wallpaper.fqsdtech.com';
   if (u.username || u.password || !u.href.startsWith(root)) throw Error('不受支持的链接');
   if (local && u.protocol === 'http:') return u.href;
   if (official && u.protocol === 'https:' && (!u.port || u.port === '443')) return u.href;
