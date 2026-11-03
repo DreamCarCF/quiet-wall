@@ -1,0 +1,50 @@
+[
+  {
+    "id": "mountain",
+    "title": "山色入梦",
+    "category": "山野",
+    "file": "mountain.jpg",
+    "width": 3840,
+    "height": 2160
+  },
+  {
+    "id": "coast",
+    "title": "潮汐之间",
+    "category": "海岸",
+    "file": "coast.jpg",
+    "width": 3840,
+    "height": 2160
+  },
+  {
+    "id": "dunes",
+    "title": "风的形状",
+    "category": "极简",
+    "file": "dunes.jpg",
+    "width": 3840,
+    "height": 2160
+  },
+  {
+    "id": "forest",
+    "title": "山林来信",
+    "category": "山野",
+    "file": "forest.jpg",
+    "width": 3840,
+    "height": 2160
+  },
+  {
+    "id": "sunset",
+    "title": "日落之后",
+    "category": "海岸",
+    "file": "sunset.jpg",
+    "width": 3840,
+    "height": 2160
+  },
+  {
+    "id": "moon",
+    "title": "月白",
+    "category": "极简",
+    "file": "moon.jpg",
+    "width": 3840,
+    "height": 2160
+  }
+]

@@ -1,0 +1,65 @@
+{
+  "name": "quiet-wall",
+  "productName": "栖景 Quiet",
+  "version": "0.1.0",
+  "description": "A quiet wallpaper companion for Windows and macOS",
+  "author": "月白白",
+  "homepage": "https://www.ilovedsy.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DreamCarCF/quiet-wall.git"
+  },
+  "main": "src/main.cjs",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.cjs",
+    "dist:win": "electron-builder --win nsis --x64",
+    "dist:mac": "electron-builder --mac dmg --universal"
+  },
+  "devDependencies": {
+    "electron": "45.2.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "studio.quiet.wall",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "Quiet-Wall-Windows-Setup.${ext}"
+    },
+    "mac": {
+      "category": "public.app-category.photography",
+      "icon": "assets/icon-1024.png",
+      "identity": null,
+      "gatekeeperAssess": false,
+      "hardenedRuntime": false,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["universal"]
+        }
+      ]
+    },
+    "dmg": {
+      "artifactName": "Quiet-Wall-Mac.${ext}"
+    },
+    "asarUnpack": [
+      "src/wallpaper.ps1"
+    ]
+  }
+}
