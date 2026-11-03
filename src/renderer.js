@@ -8,6 +8,7 @@ const api=window.quiet||{
  download:async()=>{throw Error('请在 Windows 桌面应用中下载壁纸');},
  import:async()=>{throw Error('请在 Windows 桌面应用中导入图片');},
  search:async()=>{throw Error('Unsplash 在线图库尚未配置');},
+ feedback:async()=>{throw Error('请在桌面应用中提交反馈');},
  settings:async v=>{previewStore.rotation=v;return previewStore;},
  open:async url=>{window.open(url,'_blank','noopener');},hide:async()=>{throw Error('界面预览模式没有系统托盘');},onUpdate:()=>{},onNotice:()=>{}
 };
@@ -60,6 +61,8 @@ $('rotation').onchange=e=>action(()=>changeRotation(e.target.value));
 $('rotationQuick').onchange=e=>action(()=>changeRotation(e.target.value));
 $('visitUnsplash').onclick=()=>action(()=>api.open('https://unsplash.com/?utm_source=quiet_wall&utm_medium=referral'));
 $('authorHome').onclick=()=>action(()=>api.open('https://www.ilovedsy.com/'));
+$('openFeedback').onclick=()=>$('feedback').showModal();$('closeFeedback').onclick=()=>$('feedback').close();
+$('sendFeedback').onclick=()=>action(async()=>{const b=$('sendFeedback');b.disabled=true;try{await api.feedback($('feedbackText').value,$('feedbackContact').value);$('feedbackText').value='';$('feedbackContact').value='';$('feedback').close();toast('已发给作者，谢谢');}finally{b.disabled=false;}});
 $('authorLink').onclick=()=>{const p=lookup(selected);if(p.profile)action(()=>api.open(attribution(p.profile)));};
 $('previewFavorite').onclick=()=>action(async()=>apply(await api.favorite(selected)));
 $('previewDownload').onclick=()=>action(async()=>{const b=$('previewDownload');b.disabled=true;b.textContent='正在下载…';try{if(await api.download(selected))toast('图片已保存');}finally{b.disabled=false;b.textContent='↓ 下载';}});

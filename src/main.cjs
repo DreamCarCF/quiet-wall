@@ -5,6 +5,7 @@ const {pathToFileURL} = require('node:url');
 const {randomUUID} = require('node:crypto');
 const {execFile} = require('node:child_process');
 const {promisify} = require('node:util');
+const os = require('node:os');
 const guard = require('./guards.cjs');
 let win,tray,timer,quitting=false,working=false;
 const topics={'全部':'nature landscape','山野':'mountain landscape','海岸':'ocean coast','极简':'minimalist landscape'};
@@ -13,8 +14,9 @@ let stateFile,mediaDir;
 let saveQueue=Promise.resolve();
 const remote=new Map();
 let feed=[],feedQuery='';
-const key='PPh4eDg5vLGNv009egTasg9BK9bjcfyTGIrTPpbBDDM';
-const enabled=Boolean(key.trim());
+const apiBase=process.env.QUIET_API||(app.isPackaged?'https://www.ilovedsy.com/quiet':'http://127.0.0.1:8787');
+let enabled=false;
+let deviceId,sessionId,sessionStarted,usageTimer,usageFlushed=false;
 const root=path.join(__dirname,'..');
 const bundled=require('./bundled.json').map(p=>({...p,path:path.join(root,'assets',p.file),source:'builtin',author:'Quiet Studio'}));
 function allPhotos(){return [...bundled,...state.photos,...remote.values()];}
@@ -22,18 +24,21 @@ function photo(id){const p=allPhotos().find(x=>x.id===id);if(!p)throw Error('图
 function display(p){return {...p,path:undefined,url:p.path?pathToFileURL(p.path).href:p.url};}
 function snapshot(){return {favorites:state.favorites,history:state.history,current:state.current,rotation:state.rotation,topic:state.topic||'全部',online:enabled,photos:[...bundled,...state.photos].map(display)};}
 function save(){const data=JSON.stringify(state,null,2);saveQueue=saveQueue.catch(()=>{}).then(async()=>{await fs.writeFile(stateFile+'.tmp',data);await fs.rename(stateFile+'.tmp',stateFile);});return saveQueue;}
-async function request(url){const res=await fetch(url,{headers:{Authorization:`Client-ID ${key}`,'Accept-Version':'v1'},redirect:'error',signal:AbortSignal.timeout(20000)});if(!res.ok)throw Error(res.status===403||res.status===429?'Unsplash 请求额度已用完，请稍后再试':`Unsplash 连接失败（${res.status}）`);return res.json();}
+async function service(pathname,options={}){const res=await fetch(guard.serviceURL(apiBase,pathname),{method:options.method||'GET',headers:{'Content-Type':'application/json',Accept:'application/json'},body:options.body,signal:AbortSignal.timeout(20000)});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||`连接作者服务器失败（${res.status}）`);return data;}
+async function refreshOnline(){try{enabled=Boolean((await service('/api/health')).unsplash);}catch{enabled=false;}}
+function machine(){return {deviceId,sessionId,appVersion:app.getVersion(),platform:process.platform,arch:process.arch,osVersion:os.release(),cpu:(os.cpus()?.[0]?.model||'未知处理器').slice(0,120),memoryGb:Math.round(os.totalmem()/1024/1024/1024),locale:app.getLocale(),elapsedSec:Math.round((Date.now()-sessionStarted)/1000)};}
+function safeProfile(value){try{return value?guard.externalURL(value):'';}catch{return '';}}
+async function ping(){if(!deviceId)return;try{await service('/api/usage',{method:'POST',body:JSON.stringify(machine())});}catch{}}
 async function search(query,page){
- if(!enabled)throw Error('Unsplash 在线图库尚未配置。可以先导入图片，或打开 Unsplash 网站选图。');
+ if(!enabled)throw Error('作者服务器上的 Unsplash 还没有就绪。可以先导入图片，或打开 Unsplash 网站选图。');
  const raw=String(query||'全部').slice(0,100);
  const mapped=(topics[raw]||raw||topics['全部']).slice(0,100);
  const pageNo=Math.min(100,Math.max(1,Number(page)||1));
- const u=new URL('https://api.unsplash.com/search/photos');u.search=new URLSearchParams({query:mapped,orientation:'landscape',per_page:'24',page:String(pageNo)});
- const data=await request(u);
- const photos=data.results.map(x=>({id:x.id,title:x.alt_description||x.description||'Untitled',author:x.user.name,profile:x.user.links.html,link:x.links.html,url:guard.imageURL(x.urls.regular),full:guard.imageURL(x.urls.full),download:guard.apiURL(x.links.download_location),width:x.width,height:x.height,source:'unsplash',category:topics[raw]?raw:'摄影'}));
+ const data=await service(`/api/search?query=${encodeURIComponent(mapped)}&page=${pageNo}&category=${encodeURIComponent(topics[raw]?raw:'')}`);
+ const photos=(data.photos||[]).map(x=>({...x,url:guard.imageURL(x.url),full:guard.imageURL(x.full),profile:safeProfile(x.profile),source:'unsplash'}));
  for(const p of photos)remote.set(p.id,p);
  if(pageNo===1){feed=photos;feedQuery=mapped;const topicChanged=Boolean(topics[raw]&&state.topic!==raw),queryChanged=state.rotationQuery!==mapped;state.rotationQuery=mapped;if(topics[raw])state.topic=raw;if(topicChanged||queryChanged)await save();}
- return {photos:photos.map(display),pages:data.total_pages};
+ return {photos:photos.map(display),pages:data.pages||0};
 }
 async function rotateOnce(){
  const expected=state.rotationQuery||topics[state.topic]||topics['全部'];
@@ -57,7 +62,7 @@ async function localFile(p){
  const bytes=Buffer.concat(chunks);if(nativeImage.createFromBuffer(bytes).isEmpty())throw Error('图片格式无法识别');
  await fs.writeFile(target,bytes);return target;
 }
-async function track(p){if(p.source==='unsplash'){if(!enabled)throw Error('Unsplash 未连接');await request(guard.apiURL(p.download));}}
+async function track(p){if(p.source==='unsplash'){if(!enabled)throw Error('Unsplash 未连接');await service('/api/track',{method:'POST',body:JSON.stringify({id:p.id})});}}
 async function applyDesktop(local){
  if(process.platform==='win32'){
   const script=app.isPackaged?path.join(process.resourcesPath,'app.asar.unpacked','src','wallpaper.ps1'):path.join(__dirname,'wallpaper.ps1');
@@ -99,11 +104,17 @@ app.whenReady().then(async()=>{
  handle('import',async()=>{const selected=await dialog.showOpenDialog(win,{properties:['openFile','multiSelections'],filters:[{name:'图片',extensions:['jpg','jpeg','png','webp']}]});if(selected.canceled)return snapshot();for(const file of selected.filePaths){const stat=await fs.stat(file);if(stat.size>60*1024*1024)throw Error('单张图片不能超过 60 MB');const img=nativeImage.createFromPath(file);if(img.isEmpty())throw Error('无法读取图片：'+path.basename(file));const id=randomUUID(),dest=path.join(mediaDir,id+'.png');await fs.writeFile(dest,img.toPNG());state.photos.push({id,title:path.basename(file,path.extname(file)),path:dest,source:'local',author:'本地图片',category:'我的图片',...img.getSize()});await save();}return snapshot();});
  handle('open',url=>shell.openExternal(guard.externalURL(url)));
  handle('settings',async value=>{state.rotation=guard.interval(value);await save();schedule();return snapshot();});
+ handle('feedback',async(message,contact)=>{const text=String(message||'').trim();if(text.length<2||text.length>2000)throw Error('请填写 2 到 2000 字的建议');await service('/api/feedback',{method:'POST',body:JSON.stringify({...machine(),message:text,contact:String(contact||'').trim().slice(0,120)})});return true;});
  handle('hide',()=>win.hide());
  tray=new Tray(nativeImage.createFromPath(path.join(root,'assets/icon.png')).resize({width:24,height:24}));tray.setToolTip('栖景 Quiet · 让桌面安静下来');
  tray.setContextMenu(Menu.buildFromTemplate([{label:'打开栖景',click:show},{label:'下一张壁纸',click:async()=>{try{await rotateOnce();}catch(e){show();win.webContents.send('notice',e.message);}}},{type:'separator'},{label:'退出',click:()=>{quitting=true;app.quit();}}]));tray.on('double-click',show);
- await win.loadFile(path.join(__dirname,'index.html'));schedule();
+ const deviceFile=path.join(app.getPath('userData'),'device.json');
+ try{deviceId=JSON.parse(await fs.readFile(deviceFile,'utf8')).id;}catch{}
+ if(!/^[0-9a-f-]{36}$/i.test(deviceId||'')){deviceId=randomUUID();await fs.writeFile(deviceFile,JSON.stringify({id:deviceId}));}
+ sessionId=randomUUID();sessionStarted=Date.now();
+ await refreshOnline();
+ await win.loadFile(path.join(__dirname,'index.html'));schedule();ping();usageTimer=setInterval(ping,60000);
 });
-app.on('before-quit',()=>{quitting=true;clearInterval(timer);});
+app.on('before-quit',event=>{quitting=true;clearInterval(timer);clearInterval(usageTimer);if(!usageFlushed){usageFlushed=true;event.preventDefault();ping().finally(()=>app.quit());}});
 app.on('window-all-closed',()=>{});
 const lock=app.requestSingleInstanceLock();if(!lock)app.quit();else app.on('second-instance',()=>win&&show());

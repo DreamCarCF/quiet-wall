@@ -1,6 +1,8 @@
 node_modules/
 dist/
 .env
+server/.env
+server/data/
 .npmrc
 *.log
 .DS_Store
