@@ -4,6 +4,20 @@
 
 作者：[月白白](https://www.ilovedsy.com)
 
+## 界面
+
+精选推荐、山野、海岸、极简直接铺开 Unsplash 风景。
+
+![发现壁纸：精选推荐图库](docs/screenshots/discover.jpg)
+
+打开应用先看到今日灵感，一键设为桌面壁纸。
+
+![今日灵感大图](docs/screenshots/hero.jpg)
+
+点开一张图，可以收藏、下载，或设为壁纸。
+
+![壁纸预览](docs/screenshots/preview.jpg)
+
 ## 下载安装
 
 - [下载 Windows 安装包](https://github.com/DreamCarCF/quiet-wall/releases/latest/download/Quiet-Wall-Windows-Setup.exe)
