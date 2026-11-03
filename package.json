@@ -14,8 +14,8 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test test/*.test.cjs",
-    "dist:win": "electron-builder --win nsis --x64",
-    "dist:mac": "electron-builder --mac dmg --universal"
+    "dist:win": "electron-builder --win nsis --x64 --publish never",
+    "dist:mac": "electron-builder --mac dmg --universal --publish never"
   },
   "devDependencies": {
     "electron": "45.2.1",
