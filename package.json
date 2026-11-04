@@ -46,9 +46,13 @@
     "mac": {
       "category": "public.app-category.photography",
       "icon": "assets/icon-1024.png",
-      "identity": null,
+      "hardenedRuntime": true,
       "gatekeeperAssess": false,
-      "hardenedRuntime": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "NSAppleEventsUsageDescription": "栖景需要控制“系统事件”，才能把壁纸设到桌面。"
+      },
       "target": [
         {
           "target": "dmg",
