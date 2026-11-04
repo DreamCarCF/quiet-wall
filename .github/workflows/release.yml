@@ -5,6 +5,7 @@ on:
     tags: ['v*']
 permissions:
   contents: write
+  actions: read
 jobs:
   build:
     name: ${{ matrix.name }}
@@ -40,6 +41,33 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Upload unsigned Windows installer for SignPath
+        id: upload-unsigned-windows
+        if: matrix.os == 'windows-latest' && secrets.SIGNPATH_API_TOKEN != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-Quiet-Wall-Windows-Setup
+          path: dist/Quiet-Wall-Windows-Setup.exe
+          if-no-files-found: error
+      - name: Sign Windows installer with SignPath
+        if: matrix.os == 'windows-latest' && secrets.SIGNPATH_API_TOKEN != ''
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG }}
+          signing-policy-slug: release-signing
+          github-artifact-id: ${{ steps.upload-unsigned-windows.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: signed-windows
+      - name: Replace installer with the signed file
+        if: matrix.os == 'windows-latest' && secrets.SIGNPATH_API_TOKEN != ''
+        shell: pwsh
+        run: |
+          $signed = Get-ChildItem -Recurse signed-windows -Filter Quiet-Wall-Windows-Setup.exe | Select-Object -First 1
+          if (-not $signed) { throw "SignPath did not return Quiet-Wall-Windows-Setup.exe" }
+          Copy-Item $signed.FullName dist/Quiet-Wall-Windows-Setup.exe -Force
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.file }}
